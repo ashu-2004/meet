@@ -13,10 +13,8 @@ const LocalMedia = ({ localStream, isCameraEnabled = true, userRole = "candidate
     }
   }, [localStream]);
 
-  // Format role for display
   const formattedRole = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Candidate";
 
-  // Role badge color
   const roleBadgeColor =
     userRole === "interviewer" ? "bg-blue-500/80" : userRole === "recruiter" ? "bg-purple-500/80" : "bg-green-500/80";
 
@@ -24,7 +22,7 @@ const LocalMedia = ({ localStream, isCameraEnabled = true, userRole = "candidate
 
   return (
     <div className="relative w-[240px] h-[180px] rounded-xl overflow-hidden">
-      <div className={`relative h-full ${!isCameraEnabled ? "bg-slate-800" : ""}`}>
+      {/* <div className={`relative h-full ${!isCameraEnabled ? "bg-slate-800" : ""}`}>
         <video
           ref={videoRef}
           className={`w-full h-full object-cover ${!isCameraEnabled ? "invisible" : ""}`}
@@ -46,7 +44,7 @@ const LocalMedia = ({ localStream, isCameraEnabled = true, userRole = "candidate
           <span className="text-slate-400 mx-1">|</span>
           <span className={`text-xs px-1.5 py-0.5 rounded ${roleBadgeColor}`}>{formattedRole}</span>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

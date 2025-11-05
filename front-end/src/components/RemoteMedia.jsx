@@ -4,7 +4,12 @@ import { useEffect, useRef } from "react";
 import { User } from "lucide-react";
 import FaceExpressionAnalyzer from "./FaceExpressionAnalyzer";
 
-const VideoContainer = ({ stream, username, userRole, isMainSpeaker = false }) => {
+const VideoContainer = ({
+  stream,
+  username,
+  userRole,
+  isMainSpeaker = false,
+}) => {
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -13,11 +18,16 @@ const VideoContainer = ({ stream, username, userRole, isMainSpeaker = false }) =
     }
   }, [stream]);
 
-  // Format role for display
-  const formattedRole = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "";
+  const formattedRole = userRole
+    ? userRole.charAt(0).toUpperCase() + userRole.slice(1)
+    : "";
 
   return (
-    <div className={`relative ${isMainSpeaker ? "w-full h-[450px] mx-auto" : "w-full h-24 md:h-32"}`}>
+    <div
+      className={`relative ${
+        isMainSpeaker ? "w-full h-[450px] mx-auto" : "w-full h-24 md:h-32"
+      }`}
+    >
       {stream ? (
         <>
           <video
@@ -66,21 +76,41 @@ const VideoContainer = ({ stream, username, userRole, isMainSpeaker = false }) =
   );
 };
 
-const RemoteMedia = ({ consumers, activeSpeakers }) => {
-  // Filter out current user's producer from active speakers
+const RemoteMedia = ({
+  consumers,
+  activeSpeakers,
+  localStream,
+  localUserName,
+  localUserRole,
+}) => {
   const filteredSpeakers = activeSpeakers || [];
   const mainSpeaker = filteredSpeakers[0];
-  const otherSpeakers = filteredSpeakers.slice(1, 5);
+  const otherSpeakers = Object.keys(consumers).filter(
+    (id) => id !== mainSpeaker
+  );
+
+  const mainSpeakerConsumer = consumers[mainSpeaker];
+  const isLocalActive =
+    mainSpeaker &&
+    (!mainSpeakerConsumer ||
+      mainSpeakerConsumer?.userName === localUserName ||
+      mainSpeaker === localUserName);
 
   return (
     <div className="space-y-4">
-      {/* Current Speaker Video (Large Center Video) */}
-      {mainSpeaker && consumers[mainSpeaker] ? (
+      {/* === MAIN ACTIVE SPEAKER === */}
+      {mainSpeakerConsumer || isLocalActive ? (
         <div className="overflow-hidden rounded-xl shadow-xl border border-slate-700">
           <VideoContainer
-            stream={consumers[mainSpeaker]?.combinedStream}
-            username={consumers[mainSpeaker]?.userName}
-            userRole={consumers[mainSpeaker]?.userRole}
+            stream={
+              isLocalActive ? localStream : mainSpeakerConsumer?.combinedStream
+            }
+            username={
+              isLocalActive ? localUserName : mainSpeakerConsumer?.userName
+            }
+            userRole={
+              isLocalActive ? localUserRole : mainSpeakerConsumer?.userRole
+            }
             isMainSpeaker={true}
           />
         </div>
@@ -93,21 +123,32 @@ const RemoteMedia = ({ consumers, activeSpeakers }) => {
         </div>
       )}
 
-      {/* Small videos at top (non-dominant speakers) */}
-      {otherSpeakers.length > 0 && (
+      {Object.keys(consumers).length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {otherSpeakers.map((speakerId, index) => (
+          {Object.entries(consumers).map(([id, consumer]) => (
             <div
-              key={speakerId || `empty-${index}`}
+              key={id}
               className="overflow-hidden rounded-xl shadow-lg border border-slate-700"
             >
               <VideoContainer
-                stream={consumers[speakerId]?.combinedStream}
-                username={consumers[speakerId]?.userName}
-                userRole={consumers[speakerId]?.userRole}
+                stream={consumer?.combinedStream}
+                username={consumer?.userName}
+                userRole={consumer?.userRole}
+                isMainSpeaker={false}
               />
             </div>
           ))}
+
+          {localStream && (
+            <div className="overflow-hidden rounded-xl shadow-lg border border-slate-700">
+              <VideoContainer
+                stream={localStream}
+                username={localUserName}
+                userRole={localUserRole}
+                isMainSpeaker={false}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

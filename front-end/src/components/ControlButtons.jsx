@@ -11,10 +11,8 @@ const ControlButtons = ({
   isFeedSending,
   userRole,
 }) => {
-  // Format role for display
   const formattedRole = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Candidate";
 
-  // Role badge color
   const roleBadgeColor =
     userRole === "interviewer" ? "bg-blue-500/90" : userRole === "recruiter" ? "bg-purple-500/90" : "bg-green-500/90";
 
@@ -52,7 +50,7 @@ const ControlButtons = ({
           <Phone size={20} className="text-white rotate-225 transform" />
         </button>
       </div>
-      <div className="w-[70px]"></div> {/* Empty div for balance */}
+      <div className="w-[70px]"></div>
     </div>
   );
 };

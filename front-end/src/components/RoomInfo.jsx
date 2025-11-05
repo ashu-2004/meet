@@ -12,7 +12,6 @@ const RoomInfo = ({ onJoinRoom }) => {
   const [userRole, setUserRole] = useState("candidate");
   const videoPreviewRef = useRef(null);
 
-  // Request camera and microphone access on component mount
   useEffect(() => {
     const getMedia = async () => {
       try {
@@ -28,7 +27,6 @@ const RoomInfo = ({ onJoinRoom }) => {
         }
       } catch (error) {
         console.error("Error accessing media devices:", error);
-        // If error, disable the corresponding toggles
         if (error.name === "NotAllowedError") {
           setIsCameraEnabled(false);
           setIsMicEnabled(false);
@@ -39,14 +37,12 @@ const RoomInfo = ({ onJoinRoom }) => {
     getMedia();
 
     return () => {
-      // Cleanup stream when component unmounts
       if (localStream) {
         localStream.getTracks().forEach((track) => track.stop());
       }
     };
   }, []);
 
-  // Handle toggling camera
   const toggleCamera = () => {
     if (localStream) {
       const videoTrack = localStream.getVideoTracks()[0];
@@ -57,7 +53,6 @@ const RoomInfo = ({ onJoinRoom }) => {
     }
   };
 
-  // Handle toggling microphone
   const toggleMic = () => {
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
@@ -85,7 +80,6 @@ const RoomInfo = ({ onJoinRoom }) => {
 
         <h2 className="text-2xl font-bold text-center mb-6">Join Meeting</h2>
 
-        {/* Video preview */}
         <div className="relative overflow-hidden rounded-lg mb-6 bg-black aspect-video">
           <video
             ref={videoPreviewRef}
@@ -170,7 +164,6 @@ const RoomInfo = ({ onJoinRoom }) => {
               >
                 <option value="candidate">Candidate</option>
                 <option value="interviewer">Interviewer</option>
-                <option value="recruiter">Recruiter</option>
               </select>
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                 <svg

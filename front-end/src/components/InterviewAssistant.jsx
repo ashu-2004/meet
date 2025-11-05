@@ -80,10 +80,10 @@ const InterviewAssistant = ({ localStream }) => {
         /## Evaluation[^\n]*\n([\s\S]*?)(?=^## |\Z)/im
       );
       const expectedMatch = analysisText.match(
-        /## Expected Answer\s+([\s\S]*?)(?=## |$)/i
+        /## Expected Answer[^\n]*\n([\s\S]*?)(?=^## |\Z)/im
       );
       const followUpMatch = analysisText.match(
-        /## Next Question\s+([\s\S]*?)(?=## |$)/i
+        /## Next Question[^\n]*\n([\s\S]*?)(?=^## |\Z)/im
       );
 
       const analysisContent = analysisMatch ? analysisMatch[1].trim() : "";

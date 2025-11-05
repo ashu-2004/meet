@@ -30,15 +30,26 @@ const config = {
       parameters: {},
     },
   ],
+  //Local On Single Machine
+
   webRtcTransport: {
-    listenIps: [
-      { ip: "0.0.0.0", announcedIp: "127.0.0.1" }, // listen on all local interfaces
-    ],
+    listenIps: [{ ip: "0.0.0.0", announcedIp: "127.0.0.1" }],
     enableUdp: true,
     enableTcp: true,
     preferUdp: true,
     initialAvailableOutgoingBitrate: 1000000,
   },
+  //For LAN or Public Server*/
+
+  // webRtcTransport: {
+  //   listenIps: [
+  //     { ip: "0.0.0.0", announcedIp: "192.168.1.5" }, // your server's LAN IP
+  //   ],
+  //   enableUdp: true,
+  //   enableTcp: true,
+  //   preferUdp: true,
+  //   initialAvailableOutgoingBitrate: 1000000,
+  // },
 };
 
 module.exports = config;

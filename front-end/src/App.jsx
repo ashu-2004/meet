@@ -32,7 +32,6 @@ function App() {
     userRole,
   } = useMediaSoup();
 
-  // Load face-api.js models on component mount
   useEffect(() => {
     const initFaceApi = async () => {
       try {
@@ -50,13 +49,15 @@ function App() {
     initFaceApi();
   }, []);
 
-  // Determine if the user should see the interview assistant
-  const showInterviewAssistant = userRole === "interviewer" || userRole === "recruiter";
+  const showInterviewAssistant =
+    userRole === "interviewer" || userRole === "recruiter";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
-      {/* Notification system is always visible */}
-      <NotificationSystem notifications={notifications} clearNotification={clearNotification} />
+      <NotificationSystem
+        notifications={notifications}
+        clearNotification={clearNotification}
+      />
 
       {!isJoined ? (
         <div className="container mx-auto px-4 py-8">
@@ -67,7 +68,8 @@ function App() {
 
             {modelLoadError && (
               <div className="mt-2 text-center text-red-400 text-sm">
-                Failed to load facial recognition models. Emotion detection may not work.
+                Failed to load facial recognition models. Emotion detection may
+                not work.
               </div>
             )}
           </header>
@@ -82,7 +84,6 @@ function App() {
         </div>
       ) : (
         <div className="h-screen flex flex-col">
-          {/* Top control bar */}
           <div className="bg-slate-900 p-3 border-b border-slate-700">
             <ControlButtons
               onMuteAudio={muteAudio}
@@ -97,14 +98,28 @@ function App() {
 
           {/* Main content area - split layout depends on user role */}
           <div className="flex-1 flex overflow-hidden">
-            {/* Video area - takes full width for candidates, half for others */}
-            <div className={`flex flex-col bg-slate-900 overflow-auto ${showInterviewAssistant ? "flex-1" : "w-full"}`}>
+            <div
+              className={`flex flex-col bg-slate-900 overflow-auto ${
+                showInterviewAssistant ? "flex-1" : "w-full"
+              }`}
+            >
+             
               <div className="flex-1 p-4">
-                <RemoteMedia consumers={consumers} activeSpeakers={activeSpeakers} />
+                <RemoteMedia
+                  consumers={consumers}
+                  activeSpeakers={activeSpeakers}
+                  localStream={localStream}
+                  localUserName={notifications?.userName || "You"}
+                  localUserRole={userRole}
+                />
               </div>
 
               <div className="p-4 border-t border-slate-700">
-                <LocalMedia localStream={localStream} isCameraEnabled={isCameraEnabled} userRole={userRole} />
+                <LocalMedia
+                  localStream={localStream}
+                  isCameraEnabled={isCameraEnabled}
+                  userRole={userRole}
+                />
               </div>
             </div>
 
@@ -116,7 +131,9 @@ function App() {
             )}
 
             {/* Hidden transcription for candidates - only logs to console */}
-            {localStream && userRole === "candidate" && <CandidateTranscription localStream={localStream} />}
+            {localStream && userRole === "candidate" && (
+              <CandidateTranscription localStream={localStream} />
+            )}
           </div>
         </div>
       )}

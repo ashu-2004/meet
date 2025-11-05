@@ -19,84 +19,51 @@ const useMediaSoup = () => {
   const [activeSpeakers, setActiveSpeakers] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [userRole, setUserRole] = useState("candidate");
-
-  // UI state
   const [isJoined, setIsJoined] = useState(false);
   const [isFeedEnabled, setIsFeedEnabled] = useState(false);
   const [isFeedSending, setIsFeedSending] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isCameraEnabled, setIsCameraEnabled] = useState(true);
 
-  // Initialize socket connection
   useEffect(() => {
-    const socketInstance = io("http://localhost:3004", { transports: ["websocket"] });
-    // const socketInstance = io("https://propanedioic-limicoline-janel.ngrok-free.dev", {
-    //   transports: ["websocket"],
-    // });
-
+    const socketInstance = io("https://localhost:3004", { transports: ["websocket"] });
     socketInstance.on("connect", () => {
       console.log("Connected to socket server");
     });
-
     setSocket(socketInstance);
-
     return () => {
       socketInstance.disconnect();
     };
   }, []);
 
-  // Handle active speakers updates
   useEffect(() => {
     if (!socket) return;
-
     const handleActiveSpeakers = (newListOfActives) => {
-      console.log("Active speakers updated:", newListOfActives);
+      // console.log("Active speakers updated:", newListOfActives);
       setActiveSpeakers(newListOfActives);
     };
-
     socket.on("updateActiveSpeakers", handleActiveSpeakers);
-
     return () => {
       socket.off("updateActiveSpeakers", handleActiveSpeakers);
     };
   }, [socket, audioProducer]);
 
-  // Handle user left event
   useEffect(() => {
     if (!socket) return;
-
     const handleUserLeft = (userInfo) => {
-      console.log("User left:", userInfo);
-
-      // Remove the user from consumers
+      // console.log("User left:", userInfo);
       setConsumers((prevConsumers) => {
         const newConsumers = { ...prevConsumers };
-
-        // Find and remove consumers associated with this user
         Object.keys(newConsumers).forEach((audioPid) => {
           if (newConsumers[audioPid].socketId === userInfo.socketId) {
-            // Close the transport and consumers if they exist
-            if (newConsumers[audioPid].transport) {
-              newConsumers[audioPid].transport.close();
-            }
-
-            if (newConsumers[audioPid].audioConsumer) {
-              newConsumers[audioPid].audioConsumer.close();
-            }
-
-            if (newConsumers[audioPid].videoConsumer) {
-              newConsumers[audioPid].videoConsumer.close();
-            }
-
-            // Remove this consumer
+            if (newConsumers[audioPid].transport) newConsumers[audioPid].transport.close();
+            if (newConsumers[audioPid].audioConsumer) newConsumers[audioPid].audioConsumer.close();
+            if (newConsumers[audioPid].videoConsumer) newConsumers[audioPid].videoConsumer.close();
             delete newConsumers[audioPid];
           }
         });
-
         return newConsumers;
       });
-
-      // Add a notification
       const notificationId = Date.now();
       const newNotification = {
         id: notificationId,
@@ -104,147 +71,82 @@ const useMediaSoup = () => {
         message: `${userInfo.userName} has left the meeting`,
         timestamp: new Date(),
       };
-
       setNotifications((prev) => [...prev, newNotification]);
-
-      // Remove notification after 5 seconds
       setTimeout(() => {
         setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
       }, 5000);
     };
-
     socket.on("userLeft", handleUserLeft);
-
     return () => {
       socket.off("userLeft", handleUserLeft);
     };
   }, [socket]);
 
-  // Handle new producers to consume
   useEffect(() => {
     if (!socket || !device) return;
-
     const handleNewProducers = (consumeData) => {
-      console.log("New producers to consume:", consumeData);
-
-      // Create a function that will update our consumers state
+      // console.log("New producers to consume:", consumeData);
       const updateConsumers = (audioPid, consumerData) => {
         setConsumers((prev) => ({
           ...prev,
           [audioPid]: consumerData,
         }));
       };
-
-      // Modified requestTransportToConsume to work with React state
-      requestTransportToConsume(
-        consumeData,
-        socket,
-        device,
-        consumers,
-        updateConsumers
-      );
+      requestTransportToConsume(consumeData, socket, device, consumers, updateConsumers);
     };
-
     socket.on("newProducersToConsume", handleNewProducers);
-
     return () => {
       socket.off("newProducersToConsume", handleNewProducers);
     };
   }, [socket, device, consumers]);
 
-  // Join room function
   const joinRoom = useCallback(
     async (roomName, userName, mediaOptions = null) => {
       if (!socket) return;
-
       try {
-        // If mediaOptions is provided, use it (auto-join mode)
         if (mediaOptions && mediaOptions.localStream) {
           setLocalStream(mediaOptions.localStream);
           setIsFeedEnabled(true);
-
-          // Set initial audio/video state based on media options
-          if (!mediaOptions.isMicEnabled) {
-            setIsAudioMuted(true);
-          }
-
-          if (!mediaOptions.isCameraEnabled) {
-            setIsCameraEnabled(false);
-          }
-
-          // Set user role
-          if (mediaOptions.userRole) {
-            setUserRole(mediaOptions.userRole);
-          }
+          if (!mediaOptions.isMicEnabled) setIsAudioMuted(true);
+          if (!mediaOptions.isCameraEnabled) setIsCameraEnabled(false);
+          if (mediaOptions.userRole) setUserRole(mediaOptions.userRole);
         }
-
         const joinRoomResp = await socket.emitWithAck("joinRoom", {
           userName,
           roomName,
           userRole: mediaOptions?.userRole || "candidate",
         });
-
-        console.log("Join room response:", joinRoomResp);
-
+        // console.log("Join room response:", joinRoomResp);
         const newDevice = new Device();
         await newDevice.load({
           routerRtpCapabilities: joinRoomResp.routerRtpCapabilities,
         });
-
         setDevice(newDevice);
-
-        // Create a function that will update our consumers state
         const updateConsumers = (audioPid, consumerData) => {
           setConsumers((prev) => ({
             ...prev,
             [audioPid]: consumerData,
           }));
         };
-
-        // Request to consume existing producers
-        requestTransportToConsume(
-          joinRoomResp,
-          socket,
-          newDevice,
-          {}, // Empty consumers object initially
-          updateConsumers
-        );
-
+        requestTransportToConsume(joinRoomResp, socket, newDevice, {}, updateConsumers);
         setIsJoined(true);
-
-        // If we have mediaOptions, start sending the feed automatically
         if (mediaOptions && mediaOptions.localStream) {
-          // We need to wait a bit for the device to be fully set up
           setTimeout(async () => {
             try {
-              const transport = await createProducerTransport(
-                socket,
-                newDevice
-              );
+              const transport = await createProducerTransport(socket, newDevice);
               setProducerTransport(transport);
-
-              const producers = await createProducer(
-                mediaOptions.localStream,
-                transport
-              );
-
+              const producers = await createProducer(mediaOptions.localStream, transport);
               setAudioProducer(producers.audioProducer);
               setVideoProducer(producers.videoProducer);
               setIsFeedSending(true);
-
-              // If audio is initially muted, pause the producer
               if (!mediaOptions.isMicEnabled && producers.audioProducer) {
                 producers.audioProducer.pause();
                 socket.emit("audioChange", "mute");
               }
-
-              // If video is initially disabled, pause the video track
               if (!mediaOptions.isCameraEnabled && producers.videoProducer) {
                 producers.videoProducer.pause();
                 socket.emit("videoChange", "pause");
               }
-
-              // Add a joining notification
               const notificationId = Date.now();
               const newNotification = {
                 id: notificationId,
@@ -252,14 +154,9 @@ const useMediaSoup = () => {
                 message: "You have joined the meeting",
                 timestamp: new Date(),
               };
-
               setNotifications((prev) => [...prev, newNotification]);
-
-              // Remove notification after 5 seconds
               setTimeout(() => {
-                setNotifications((prev) =>
-                  prev.filter((n) => n.id !== notificationId)
-                );
+                setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
               }, 5000);
             } catch (error) {
               console.error("Error auto-starting feed:", error);
@@ -273,7 +170,6 @@ const useMediaSoup = () => {
     [socket]
   );
 
-  // Enable feed function - still kept for backward compatibility
   const enableFeed = useCallback(async () => {
     try {
       if (!localStream) {
@@ -282,7 +178,6 @@ const useMediaSoup = () => {
           video: true,
           audio: { deviceId: { exact: mic2Id } },
         });
-
         setLocalStream(stream);
       }
       setIsFeedEnabled(true);
@@ -291,16 +186,12 @@ const useMediaSoup = () => {
     }
   }, [localStream]);
 
-  // Send feed function
   const sendFeed = useCallback(async () => {
     if (!socket || !device || !localStream) return;
-
     try {
       const transport = await createProducerTransport(socket, device);
       setProducerTransport(transport);
-
       const producers = await createProducer(localStream, transport);
-
       setAudioProducer(producers.audioProducer);
       setVideoProducer(producers.videoProducer);
       setIsFeedSending(true);
@@ -309,92 +200,53 @@ const useMediaSoup = () => {
     }
   }, [socket, device, localStream]);
 
-  // Mute audio function
   const muteAudio = useCallback(() => {
     if (!audioProducer) return;
-
     if (audioProducer.paused) {
-      // Currently paused. User wants to unpause
       audioProducer.resume();
       socket.emit("audioChange", "unmute");
       setIsAudioMuted(false);
     } else {
-      // Currently on, user wants to pause
       audioProducer.pause();
       socket.emit("audioChange", "mute");
       setIsAudioMuted(true);
     }
   }, [audioProducer, socket]);
 
-  // Toggle camera function
   const toggleCamera = useCallback(() => {
     if (!videoProducer || !localStream) return;
-
     const videoTrack = localStream.getVideoTracks()[0];
     if (!videoTrack) return;
-
     if (isCameraEnabled) {
-      // Turn camera off
       videoProducer.pause();
       videoTrack.enabled = false;
-      if (socket) {
-        socket.emit("videoChange", "pause");
-      }
+      if (socket) socket.emit("videoChange", "pause");
       setIsCameraEnabled(false);
     } else {
-      // Turn camera on
       videoProducer.resume();
       videoTrack.enabled = true;
-      if (socket) {
-        socket.emit("videoChange", "resume");
-      }
+      if (socket) socket.emit("videoChange", "resume");
       setIsCameraEnabled(true);
     }
   }, [videoProducer, localStream, isCameraEnabled, socket]);
 
-  // End call function
   const endCall = useCallback(() => {
     if (!socket) return;
-
     try {
-      // Clean up producers
-      if (audioProducer) {
-        audioProducer.close();
-      }
-
-      if (videoProducer) {
-        videoProducer.close();
-      }
-
-      // Clean up transport
-      if (producerTransport) {
-        producerTransport.close();
-      }
-
-      // Close all consumer transports
+      if (audioProducer) audioProducer.close();
+      if (videoProducer) videoProducer.close();
+      if (producerTransport) producerTransport.close();
       Object.values(consumers).forEach((consumer) => {
-        if (consumer.transport) {
-          consumer.transport.close();
-        }
-        if (consumer.audioConsumer) {
-          consumer.audioConsumer.close();
-        }
-        if (consumer.videoConsumer) {
-          consumer.videoConsumer.close();
-        }
+        if (consumer.transport) consumer.transport.close();
+        if (consumer.audioConsumer) consumer.audioConsumer.close();
+        if (consumer.videoConsumer) consumer.videoConsumer.close();
       });
-
-      // Stop local media stream
       if (localStream) {
         localStream.getTracks().forEach((track) => {
           track.stop();
         });
       }
-
-      // Notify server
       socket.emit("leaveRoom");
-
-      // Reset state
       setProducerTransport(null);
       setVideoProducer(null);
       setAudioProducer(null);
@@ -407,21 +259,12 @@ const useMediaSoup = () => {
       setIsCameraEnabled(true);
       setIsJoined(false);
       setUserRole("candidate");
-
-      console.log("Call ended successfully");
+      // console.log("Call ended successfully");
     } catch (error) {
       console.error("Error ending call:", error);
     }
-  }, [
-    socket,
-    producerTransport,
-    videoProducer,
-    audioProducer,
-    consumers,
-    localStream,
-  ]);
+  }, [socket, producerTransport, videoProducer, audioProducer, consumers, localStream]);
 
-  // Clear a notification
   const clearNotification = useCallback((notificationId) => {
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
   }, []);

@@ -17,7 +17,6 @@ const NotificationSystem = ({ notifications, clearNotification }) => {
 
 const Notification = ({ notification, onClose }) => {
   useEffect(() => {
-    // Auto-close after 5 seconds
     const timer = setTimeout(() => {
       onClose();
     }, 5000);

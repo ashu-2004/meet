@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 const transcriptions = {
   candidate: [],
   interviewer: [],
@@ -12,11 +15,11 @@ exports.postTranscription = async (req, res) => {
       return res.status(400).json({ error: "Transcript is required" });
     }
 
-    console.log(
-      `[${formattedTimestamp}] ${
-        sender || "Unknown"
-      } Transcription: ${transcript}`
-    );
+    // console.log(
+    //   `[${formattedTimestamp}] ${
+    //     sender || "Unknown"
+    //   } Transcription: ${transcript}`
+    // );
 
     if (sender === "candidate") {
       transcriptions.candidate.push({
@@ -55,11 +58,11 @@ exports.getTranscriptions = (req, res) => {
 
 exports.getCandidateTranscriptions = (req, res) => {
   return res.status(200).json(transcriptions.candidate);
-}
+};
 
 exports.getInterviewerTranscriptions = (req, res) => {
   return res.status(200).json(transcriptions.interviewer);
-}
+};
 
 exports.clearTranscriptions = (req, res) => {
   transcriptions.candidate = [];
@@ -68,6 +71,13 @@ exports.clearTranscriptions = (req, res) => {
     status: "success",
     message: "Transcriptions cleared",
   });
-}
+};
 
-// module.exports = { transcriptions };
+module.exports = {
+  postTranscription: exports.postTranscription,
+  getTranscriptions: exports.getTranscriptions,
+  getCandidateTranscriptions: exports.getCandidateTranscriptions,
+  getInterviewerTranscriptions: exports.getInterviewerTranscriptions,
+  clearTranscriptions: exports.clearTranscriptions,
+  transcriptions,
+};

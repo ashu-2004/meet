@@ -5,21 +5,17 @@ from flask_cors import CORS
 import markdown
 import logging
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
 
-# Initialize Groq client
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-# Store conversation history
 conversation_history = []
 
-# For testing when API key isn't available
 MOCK_RESPONSE = """## Analysis
 - The candidate provided a clear overview of the differences between monolithic and microservices architectures
 - They correctly identified that monolithic architectures are single, unified applications
@@ -46,12 +42,10 @@ def analyze_text():
     if not text_input:
         return jsonify({"error": "No text provided"}), 400
 
-    # Add user input to history
     conversation_history.append({"role": "user", "content": text_input})
     
     logger.info(f"Received text for analysis: {text_input[:100]}...")
 
-    # Prepare the prompt with context
     system_prompt = """You are an AI-powered technical interview evaluator. 
 Your task is to:
 1. Analyze the candidate's response
@@ -78,10 +72,9 @@ Keep the tone professional and constructive. ENSURE ALL THREE SECTIONS (Analysis
 
     try:
         if groq_client:
-            # Include the last 5 messages for context
             messages = [
                 {"role": "system", "content": system_prompt}
-            ] + conversation_history[-5:]  # Keep last 5 exchanges
+            ] + conversation_history[-5:] 
 
             logger.info("Sending request to Groq API...")
             response = groq_client.chat.completions.create(
@@ -94,23 +87,19 @@ Keep the tone professional and constructive. ENSURE ALL THREE SECTIONS (Analysis
             analysis_result = response.choices[0].message.content.strip()
             logger.info(f"Received response from Groq API: {analysis_result[:100]}...")
         else:
-            # Use mock data when API key isn't available
             logger.info("Using mock response (no API key available)...")
             analysis_result = MOCK_RESPONSE
         
-        # Verify that all sections are present
         required_sections = ["## Analysis", "## Evaluation", "## Follow-up Questions"]
         missing_sections = [section for section in required_sections if section not in analysis_result]
         
         if missing_sections:
             logger.warning(f"Missing sections in API response: {missing_sections}")
-            # Append any missing sections with placeholder content
             for section in missing_sections:
                 analysis_result += f"\n\n{section}\n- No {section.replace('## ', '')} provided"
         
         logger.info("Final analysis result has all required sections")
 
-        # Add AI response to history
         conversation_history.append(
             {"role": "assistant", "content": analysis_result})
 
@@ -121,7 +110,6 @@ Keep the tone professional and constructive. ENSURE ALL THREE SECTIONS (Analysis
 
     except Exception as e:
         logger.error(f"Error in analyze_text: {str(e)}")
-        # Fall back to mock data on error
         return jsonify({
             "transcript": text_input,
             "analysis": MOCK_RESPONSE

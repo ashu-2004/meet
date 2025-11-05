@@ -1,16 +1,13 @@
 import * as faceapi from "face-api.js";
 
-// Path to models
 const MODEL_URL = "/models";
 
-// Load all required face-api.js models
 export const loadModels = async () => {
   try {
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
       faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
     ]);
-    console.log("Face API models loaded successfully");
     return true;
   } catch (error) {
     console.error("Error loading face-api models:", error);
@@ -18,7 +15,6 @@ export const loadModels = async () => {
   }
 };
 
-// Detect faces and expressions in a video element
 export const detectExpressions = async (videoElement) => {
   if (!videoElement || videoElement.paused || videoElement.ended) {
     return null;
@@ -36,18 +32,15 @@ export const detectExpressions = async (videoElement) => {
   }
 };
 
-// Get the dominant expression from the expressions object
 export const getDominantExpression = (expressions) => {
   if (!expressions) return null;
 
-  // Find the expression with the highest score
   return Object.entries(expressions).reduce(
     (prev, current) => (current[1] > prev[1] ? current : prev),
     ["neutral", 0]
   )[0];
 };
 
-// Get color for expression
 export const getExpressionColor = (expression) => {
   const colors = {
     happy: "bg-yellow-500",
@@ -62,7 +55,6 @@ export const getExpressionColor = (expression) => {
   return colors[expression] || colors.neutral;
 };
 
-// Get emoji for expression
 export const getExpressionEmoji = (expression) => {
   const emojis = {
     happy: "😊",

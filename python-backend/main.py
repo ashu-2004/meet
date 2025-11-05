@@ -8,24 +8,19 @@ from interview_analyzer import InterviewAnalyzer
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 app = FastAPI()
-
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your frontend URL
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize the interview analyzer
 interview_analyzer = InterviewAnalyzer()
 
-# Store active connections
 active_connections = []
 
 @app.websocket("/ws/transcription")
@@ -35,24 +30,18 @@ async def websocket_endpoint(websocket: WebSocket):
     
     try:
         while True:
-            # Receive transcription data
             data = await websocket.receive_text()
             
             try:
-                # Parse the JSON data
                 transcription_data = json.loads(data)
                 
-                # Get current timestamp
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
-                # Print the transcription with timestamp
                 print(f"[{timestamp}] Transcription: {transcription_data['transcript']}")
                 
-                # Save to file
                 with open("transcriptions.txt", "a", encoding="utf-8") as f:
                     f.write(f"[{timestamp}] {transcription_data['transcript']}\n")
                 
-                # Send back the transcription to be displayed (without analysis)
                 await websocket.send_json({
                     "type": "transcription",
                     "data": {

@@ -14,10 +14,8 @@ class InterviewAnalyzer:
         """
         Analyze the candidate's response using Groq and generate follow-up questions.
         """
-        # Add user input to history
         self.conversation_history.append({"role": "user", "content": transcript})
         
-        # Prepare the prompt with context
         system_prompt = """You are an AI-powered technical interview evaluator. 
 Your task is to:
 1. Analyze the candidate's response to the previous question
@@ -48,10 +46,9 @@ Format your response in markdown with the following sections:
 Keep the tone professional and constructive."""
 
         try:
-            # Include the last 5 messages for context
             messages = [
                 {"role": "system", "content": system_prompt}
-            ] + self.conversation_history[-5:]  # Keep last 5 exchanges for context
+            ] + self.conversation_history[-5:] 
 
             response = self.groq_client.chat.completions.create(
                 model="llama-3.1-8b-instant",
@@ -62,15 +59,12 @@ Keep the tone professional and constructive."""
 
             analysis_result = response.choices[0].message.content.strip()
             
-            # Add AI response to history
             self.conversation_history.append(
                 {"role": "assistant", "content": analysis_result}
             )
 
-            # Convert markdown to HTML
             html_output = markdown.markdown(analysis_result)
 
-            # Extract the sections
             sections = self._extract_sections(analysis_result)
 
             return {
@@ -99,17 +93,14 @@ Keep the tone professional and constructive."""
         
         for line in analysis.split('\n'):
             if line.startswith('## '):
-                # Save previous section if exists
                 if current_section and current_content:
                     sections[current_section.lower().replace(' ', '_')] = '\n'.join(current_content).strip()
                     current_content = []
                 
-                # Start new section
                 current_section = line[3:].strip()
             elif current_section:
                 current_content.append(line)
         
-        # Save the last section
         if current_section and current_content:
             sections[current_section.lower().replace(' ', '_')] = '\n'.join(current_content).strip()
         
